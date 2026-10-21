@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#123b35">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ma Citerne">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Ma Citerne</title>
+<style>
+:root{--ink:#172b28;--muted:#64736f;--bg:#f3f6f4;--card:#fff;--green:#177a55;--red:#b42318;--line:#dce5e0;--dark:#123b35}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{background:var(--dark);color:#fff;padding:20px 16px 18px;border-radius:0 0 22px 22px}
+header h1{margin:0;font-size:25px}header p{margin:5px 0 0;color:#d0e0da;font-size:13px}
+main{max-width:720px;margin:auto;padding:14px 12px 40px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}.stat,.panel,.tank{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}
+.stat span{display:block;color:var(--muted);font-size:12px}.stat strong{display:block;font-size:23px;margin-top:4px}
+h2{font-size:18px;margin:0 0 12px}.panel{margin-bottom:14px}
+.tankgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.tank{padding:12px}.tankhead{display:flex;justify-content:space-between;gap:6px;font-size:13px;font-weight:700}.tank strong{font-size:20px;display:block;margin:9px 0 7px}.bar{height:7px;border-radius:9px;background:#e8eeeb;overflow:hidden}.fill{height:100%;background:var(--green);border-radius:9px}.fill.over{background:var(--red)}.small{font-size:12px;color:var(--muted);margin-top:7px}.producttag{margin-top:8px;padding:6px 8px;border-radius:8px;background:#edf5f0;font-size:12px;overflow-wrap:anywhere}
+label{font-size:13px;font-weight:650;display:block;margin:10px 0 6px}input,select{width:100%;padding:12px;border:1px solid #cbd7d1;border-radius:10px;background:#fff;font:inherit;color:var(--ink)}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button{border:0;border-radius:11px;padding:13px 14px;font:inherit;font-weight:700;cursor:pointer}.primary{background:var(--green);color:#fff;width:100%;margin-top:14px}.secondary{background:#edf2ef;color:var(--ink)}.danger{background:#fff0ef;color:var(--red)}.tabs{display:flex;gap:8px;margin-bottom:14px}.tabs button{flex:1}.tabs .active{background:var(--dark);color:#fff}
+.lot{display:flex;align-items:center;gap:9px;padding:11px 0;border-bottom:1px solid var(--line)}.lot:last-child{border-bottom:0}.lotinfo{flex:1;min-width:0}.lotinfo strong{display:block;overflow-wrap:anywhere}.lotinfo small{color:var(--muted)}.weight{font-weight:750;white-space:nowrap}.remove{padding:8px 10px}.notice{padding:10px 12px;border-radius:10px;background:#fff5df;color:#744b00;font-size:12px;line-height:1.45;margin-top:12px}.empty{text-align:center;color:var(--muted);padding:18px 0;font-size:14px}.hidden{display:none!important}
+@media(min-width:560px){.tankgrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<header><h1>🚛 Ma Citerne</h1><p>Préparation du chargement · 7 compartiments</p></header>
+<main>
+  <div class="stats">
+    <div class="stat"><span>Poids affecté</span><strong id="total">0 kg</strong></div>
+    <div class="stat"><span>Capacité totale théorique</span><strong>29 t</strong></div>
+  </div>
+  <div class="tabs">
+    <button id="tabTank" class="active" type="button">Vue citerne</button>
+    <button id="tabLots" class="secondary" type="button">Liste des lots</button>
+  </div>
+  <section id="tankView" class="panel">
+    <h2>Répartition par compartiment</h2>
+    <div class="tankgrid" id="tankgrid"></div>
+    <div class="notice">Aide à la préparation uniquement : vérifie les masses réglementaires, les consignes du transporteur, la compatibilité des produits et la répartition des charges avant chargement.</div>
+  </section>
+  <section id="lotsView" class="panel hidden">
+    <h2>Lots affectés</h2>
+    <div id="lotslist"></div>
+    <button id="export" class="secondary" style="width:100%;margin-top:12px">Exporter le récapitulatif (.txt)</button>
+    <button id="clear" class="danger" style="width:100%;margin-top:8px">Effacer ce chargement</button>
+  </section>
+  <section class="panel">
+    <h2>Ajouter un lot</h2>
+    <form id="lotForm">
+      <label for="product">Produit</label>
+      <input id="product" list="productHistory" placeholder="Ex. Lait, crème, huile…" required autocomplete="off">
+      <datalist id="productHistory"></datalist>
+      <div class="row">
+        <div><label for="ref">Référence du lot (facultatif)</label><input id="ref" placeholder="Ex. 12345"></div>
+        <div><label for="weight">Poids (kg)</label><input id="weight" type="number" min="1" step="any" placeholder="Ex. 2500" required></div>
+      </div>
+      <label>Répartition du lot par compartiment</label>
+      <p class="small" style="margin:0 0 8px">Coche une ou plusieurs cases, puis indique le poids de ce produit dans chaque compartiment. La somme doit correspondre au poids total du lot.</p>
+      <div id="allocationFields" class="tankgrid"></div>
+      <button class="primary" type="submit">+ Affecter le lot aux compartiments</button>
+      <div id="error" class="notice hidden" role="alert"></div>
+    </form>
+  </section>
+  <p class="small">Les lots et l'historique de produits sont enregistrés sur cet appareil. Évite d'effacer les données du navigateur si tu veux les conserver.</p>
+</main>
+<script>
+const CAPS=[4000,4000,4000,3000,3000,5500,5500];
+const KEY='ma-citerne-v2';
+let lots=[];
+try{lots=JSON.parse(localStorage.getItem(KEY)||'[]');if(!Array.isArray(lots))lots=[]}catch(e){lots=[]}
+const $=id=>document.getElementById(id);
+const fmt=n=>Number(n).toLocaleString('fr-FR',{maximumFractionDigits:2});
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function save(){localStorage.setItem(KEY,JSON.stringify(lots));render()}
+function totals(){return CAPS.map((_,i)=>lots.filter(l=>l.comp===i+1).reduce((s,l)=>s+l.kg,0))}
+function render(){
+ const sums=totals(),total=lots.reduce((s,l)=>s+l.kg,0);
+ $('total').textContent=fmt(total)+' kg';
+ $('tankgrid').innerHTML=CAPS.map((cap,i)=>{
+   const group=lots.filter(l=>l.comp===i+1),sum=sums[i],over=sum>cap;
+   const products=[...new Set(group.map(l=>l.product))];
+   return `<article class="tank"><div class="tankhead"><span>Compartiment ${i+1}</span><span>${fmt(cap/1000)} t max</span></div><strong>${fmt(sum)} kg</strong><div class="bar"><div class="fill ${over?'over':''}" style="width:${Math.min(100,sum/cap*100)}%"></div></div><div class="small" style="color:${over?'var(--red)':'var(--muted)'}">${over?'DÉPASSEMENT : '+fmt(sum-cap)+' kg':fmt(cap-sum)+' kg disponibles'}</div>${products.length?products.map(p=>`<div class="producttag">${esc(p)} · ${fmt(group.filter(l=>l.product===p).reduce((s,l)=>s+l.kg,0))} kg</div>`).join(''):'<div class="small">Vide</div>'}</article>`
+ }).join('');
+ $('lotslist').innerHTML=lots.length?lots.map(l=>`<div class="lot"><div class="lotinfo"><strong>${esc(l.product)}</strong><small>${esc(l.ref||'Sans référence')} · Compartiment ${l.comp}</small></div><div class="weight">${fmt(l.kg)} kg</div><button class="danger remove" data-del="${l.id}" aria-label="Supprimer ce lot">×</button></div>`).join(''):'<div class="empty">Aucun lot ajouté.</div>';
+ $('productHistory').innerHTML=[...new Set(lots.map(l=>l.product))].map(p=>`<option value="${esc(p)}">`).join('');
+ document.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{lots=lots.filter(l=>l.id!==b.dataset.del);save()}));
+}
+function switchView(which){const tank=which==='tank';$('tankView').classList.toggle('hidden',!tank);$('lotsView').classList.toggle('hidden',tank);$('tabTank').classList.toggle('active',tank);$('tabTank').classList.toggle('secondary',!tank);$('tabLots').classList.toggle('active',!tank);$('tabLots').classList.toggle('secondary',tank)}
+$('tabTank').addEventListener('click',()=>switchView('tank'));
+$('tabLots').addEventListener('click',()=>switchView('lots'));
+function buildAllocationFields(){
+ const wrap=$('allocationFields');
+ wrap.innerHTML=CAPS.map((cap,i)=>`<label style="display:flex;align-items:center;gap:8px;font-weight:600;border:1px solid var(--line);border-radius:10px;padding:10px;margin:0"><input type="checkbox" class="alloc-check" data-comp="${i+1}" style="width:18px;height:18px" aria-label="Sélectionner compartiment ${i+1}"><span style="flex:1">C${i+1}<small style="display:block;color:var(--muted);font-weight:400">${fmt(cap)} kg max</small><input type="number" min="0" step="any" class="alloc-weight" data-comp="${i+1}" placeholder="Poids kg" style="margin-top:7px;padding:8px" disabled></span></label>`).join('');
+ wrap.querySelectorAll('.alloc-check').forEach(ch=>ch.addEventListener('change',()=>{
+   const input=wrap.querySelector(`.alloc-weight[data-comp="${ch.dataset.comp}"]`);
+   input.disabled=!ch.checked;
+   if(!ch.checked)input.value='';
+   else input.focus();
+ }));
+}
+buildAllocationFields();
+$('lotForm').addEventListener('submit',e=>{
+ e.preventDefault();
+ const product=$('product').value.trim(),ref=$('ref').value.trim(),totalWeight=Number($('weight').value),err=$('error');
+ const fail=msg=>{err.textContent=msg;err.classList.remove('hidden')};err.classList.add('hidden');
+ if(!product)return fail('Saisis le nom du produit.');
+ if(!$('weight').value.trim()||!Number.isFinite(totalWeight)||totalWeight<=0)return fail('Saisis le poids total du lot, supérieur à zéro.');
+ const chosen=[...document.querySelectorAll('.alloc-check:checked')].map(ch=>{
+   const c=Number(ch.dataset.comp),input=document.querySelector(`.alloc-weight[data-comp="${c}"]`);
+   return {comp:c,kg:Number(input.value),raw:input.value.trim()};
+ });
+ if(!chosen.length)return fail('Coche au moins un compartiment.');
+ if(chosen.some(a=>!a.raw||!Number.isFinite(a.kg)||a.kg<=0))return fail('Saisis un poids supérieur à zéro pour chaque compartiment coché.');
+ const distributed=chosen.reduce((s,a)=>s+a.kg,0);
+ if(Math.abs(distributed-totalWeight)>0.01)return fail('La somme répartie ('+fmt(distributed)+' kg) doit être égale au poids total du lot ('+fmt(totalWeight)+' kg).');
+ for(const a of chosen){
+   const existing=lots.filter(l=>l.comp===a.comp);
+   if(existing.some(l=>l.product.toLocaleLowerCase('fr-FR')!==product.toLocaleLowerCase('fr-FR')))return fail('Le compartiment '+a.comp+' contient déjà un autre produit. Choisis un autre compartiment.');
+   const sum=existing.reduce((s,l)=>s+l.kg,0);
+   if(sum+a.kg>CAPS[a.comp-1])return fail('Le compartiment '+a.comp+' dépasserait sa capacité de '+fmt(sum+a.kg-CAPS[a.comp-1])+' kg.');
+ }
+ const groupId=Date.now().toString()+'-'+Math.random().toString(36).slice(2,7);
+ chosen.forEach(a=>lots.push({id:groupId+'-'+a.comp,groupId,product,ref,kg:a.kg,comp:a.comp}));
+ save();$('product').value='';$('ref').value='';$('weight').value='';
+ document.querySelectorAll('.alloc-check').forEach(ch=>ch.checked=false);
+ document.querySelectorAll('.alloc-weight').forEach(inp=>{inp.value='';inp.disabled=true});
+ switchView('tank');$('product').focus();
+});
+$('clear').addEventListener('click',()=>{if(confirm('Effacer tous les lots de ce chargement ?')){lots=[];save()}});
+$('export').addEventListener('click',()=>{
+ const sums=totals(),lines=['MA CITERNE — RÉCAPITULATIF DU CHARGEMENT','Date : '+new Date().toLocaleString('fr-FR'),'','TOTAL AFFECTÉ : '+fmt(lots.reduce((s,l)=>s+l.kg,0))+' kg',''];
+ CAPS.forEach((cap,i)=>{lines.push('COMPARTIMENT '+(i+1)+' — '+fmt(sums[i])+' / '+fmt(cap)+' kg');lots.filter(l=>l.comp===i+1).forEach(l=>lines.push('  - '+l.product+' | '+(l.ref||'sans référence')+' | '+fmt(l.kg)+' kg'));lines.push('')});
+ lines.push('À vérifier avant chargement : compatibilité produits, masses réglementaires, consignes et répartition des charges.');
+ const blob=new Blob([lines.join('\n')],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='recapitulatif-citerne.txt';a.click();URL.revokeObjectURL(url);
+});
+render();
+if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+</script>
+</body>
+</html>

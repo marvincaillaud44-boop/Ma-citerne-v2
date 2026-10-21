@@ -1,0 +1,9 @@
+MISE A JOUR v2 — MA CITERNE
+Le formulaire permet de sélectionner plusieurs compartiments pour un même lot, en saisissant le poids affecté à chacun. La somme des répartitions doit être égale au poids total indiqué.
+
+Mise à jour GitHub Pages :
+1. Ouvre le dépôt GitHub et remplace index.html et sw.js par ceux de cette archive.
+2. Enregistre avec Commit changes.
+3. Recharge l'application sur l'iPhone. Si l'ancienne version reste affichée, ferme l'application web et rouvre-la après quelques minutes.
+
+Les lots sont enregistrés localement sur cet appareil. Vérifie les masses réglementaires, les consignes et la répartition des charges avant chargement.
